@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chromify – AI Image Colorizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- Ambient background orbs -->
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="bg-orb orb-3"></div>
+
+  <div class="page">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">✦</span>
+        <span class="logo-text">Chromify</span>
+      </div>
+      <button onclick="toggleDark()" class="theme-btn" title="Toggle theme" aria-label="Toggle dark mode">
+        <span id="themeIcon">☀</span>
+      </button>
+    </header>
+
+    <!-- Hero tagline -->
+    <div class="hero">
+      <h1>Bring the past <em>to life</em></h1>
+      <p class="hero-sub">Upload a grayscale photo and our AI will restore its colour — richer, deeper, more vivid.</p>
+    </div>
+
+    <!-- Error banner -->
+    {% if error %}
+    <div class="error-banner">
+      <span>⚠</span> {{ error }}
+    </div>
+    {% endif %}
+
+    <!-- Upload card -->
+    <div class="card upload-card">
+      <form method="POST" enctype="multipart/form-data" id="uploadForm" onsubmit="return handleSubmit(event)">
+
+        <div class="upload-zone" id="dropzone"
+             ondragover="onDrag(event)"
+             ondragleave="onDragLeave(event)"
+             ondrop="onDrop(event)"
+             onclick="document.getElementById('fileInput').click()">
+          <input type="file" id="fileInput" name="image"
+                 accept=".jpg,.jpeg,.png,.bmp,.webp,.tiff" required
+                 onchange="previewImage(this)">
+          <div class="upload-icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 4L24 32M24 4L14 14M24 4L34 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 36V40C6 42.2 7.8 44 10 44H38C40.2 44 42 42.2 42 40V36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <p class="upload-main">Drag &amp; drop your image here</p>
+          <p class="upload-sub">or click to browse &nbsp;·&nbsp; JPG, PNG, BMP, WEBP, TIFF up to 16 MB</p>
+          <div id="fileName" class="file-name"></div>
+        </div>
+
+        <!-- Loader -->
+        <div id="loader" class="loader" aria-live="polite">
+          <div class="loader-inner">
+            <div class="spinner-ring"></div>
+            <div class="loader-text">
+              <span id="loaderLabel">Processing…</span>
+              <div class="progress-track">
+                <div id="progressFill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-colorize" id="colorizeBtn">
+          <span class="btn-label">Colorize Image</span>
+          <span class="btn-arrow">→</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Preview before upload -->
+    <div id="previewSection" class="card preview-card" style="display:none;">
+      <p class="card-label">Selected image</p>
+      <img id="previewImg" alt="Preview of selected image">
+    </div>
+
+    <!-- Result -->
+    {% if show_result %}
+    <div class="card result-card">
+      <div class="result-header">
+        <p class="card-label">Before &amp; After</p>
+        <span class="result-badge">✦ AI Colorized</span>
+      </div>
+
+      <div class="compare-box" id="compareBox">
+        <img src="{{ input_img }}" class="img-before" alt="Original grayscale image">
+        <div class="img-after-wrapper" id="afterWrapper">
+          <img src="{{ output_img }}" alt="Colorized result">
+        </div>
+        <!-- Slider handle -->
+        <div class="slider-handle" id="sliderHandle">
+          <div class="slider-line"></div>
+          <div class="slider-knob">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M6 4L2 10L6 16M14 4L18 10L14 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+        <div class="compare-label label-before">Before</div>
+        <div class="compare-label label-after">After</div>
+      </div>
+
+      <div class="actions">
+        <a href="/download" class="btn-action btn-download">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 9l4 4 4-4M3 17h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download
+        </a>
+        <a href="/clear" class="btn-action btn-clear">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M4 5h12M8 5V3h4v2M6 5l1 12h6l1-12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Clear
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <footer class="footer">Powered by Zhang et al for ECCV 2016 colorization model · Enhanced post-processing pipeline · Thank you for using our service!</footer>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

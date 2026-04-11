@@ -1,0 +1,10 @@
+# Ignore model files
+model/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Uploads & outputs
+static/uploads/*
+static/outputs/*
