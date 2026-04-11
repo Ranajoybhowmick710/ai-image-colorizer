@@ -1,10 +1,30 @@
 import numpy as np
 import cv2
 import os
+import urllib.request
 from flask import Flask, render_template, request, send_file, redirect
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+
+def download_file(url, path):
+    if not os.path.exists(path):
+        print(f"Downloading {path}...")
+        urllib.request.urlretrieve(url, path)
+        print("Download complete!")
+
+# Model URLs
+PROTO_URL = "https://raw.githubusercontent.com/richzhang/colorization/master/models/colorization_deploy_v2.prototxt"
+MODEL_URL = "https://github.com/richzhang/colorization/releases/download/v1.0/colorization_release_v2.caffemodel"
+POINTS_URL = "https://github.com/richzhang/colorization/raw/master/resources/pts_in_hull.npy"
+
+# Ensure model folder exists
+os.makedirs("model", exist_ok=True)
+
+# Download if missing
+download_file(PROTO_URL, PROTOTXT)
+download_file(MODEL_URL, MODEL)
+download_file(POINTS_URL, POINTS)
 
 UPLOAD_FOLDER = "static/uploads"
 OUTPUT_FOLDER = "static/outputs"
