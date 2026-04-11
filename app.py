@@ -7,6 +7,14 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
+# ── Model Paths ─────────────────────────────────────
+BASE_DIR = os.path.dirname(__file__)
+
+PROTOTXT = os.path.join(BASE_DIR, "model/colorization_deploy_v2.prototxt")
+MODEL    = os.path.join(BASE_DIR, "model/colorization_release_v2.caffemodel")
+POINTS   = os.path.join(BASE_DIR, "model/pts_in_hull.npy")
+
+# ── Auto Download ───────────────────────────────────
 def download_file(url, path):
     if not os.path.exists(path):
         print(f"Downloading {path}...")
@@ -14,8 +22,8 @@ def download_file(url, path):
         print("Download complete!")
 
 # Model URLs
-PROTO_URL = "https://raw.githubusercontent.com/richzhang/colorization/master/models/colorization_deploy_v2.prototxt"
-MODEL_URL = "https://github.com/richzhang/colorization/releases/download/v1.0/colorization_release_v2.caffemodel"
+PROTO_URL  = "https://raw.githubusercontent.com/richzhang/colorization/master/models/colorization_deploy_v2.prototxt"
+MODEL_URL  = "https://github.com/richzhang/colorization/releases/download/v1.0/colorization_release_v2.caffemodel"
 POINTS_URL = "https://github.com/richzhang/colorization/raw/master/resources/pts_in_hull.npy"
 
 # Ensure model folder exists
@@ -25,23 +33,6 @@ os.makedirs("model", exist_ok=True)
 download_file(PROTO_URL, PROTOTXT)
 download_file(MODEL_URL, MODEL)
 download_file(POINTS_URL, POINTS)
-
-UPLOAD_FOLDER = "static/uploads"
-OUTPUT_FOLDER = "static/outputs"
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "bmp", "webp", "tiff"}
-
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["OUTPUT_FOLDER"] = OUTPUT_FOLDER
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB limit
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
-# ── Load model ──────────────────────────────────────────────────────────────
-BASE_DIR = os.path.dirname(__file__)
-PROTOTXT = os.path.join(BASE_DIR, "model/colorization_deploy_v2.prototxt")
-MODEL    = os.path.join(BASE_DIR, "model/colorization_release_v2.caffemodel")
-POINTS   = os.path.join(BASE_DIR, "model/pts_in_hull.npy")
 
 net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
 pts = np.load(POINTS)
