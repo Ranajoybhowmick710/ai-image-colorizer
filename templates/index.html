@@ -11,9 +11,6 @@
 </head>
 
 <body>
-  <div id="cursor-dot"></div>
-  <div id="cursor-ring"></div>
-
   <!-- Ambient background orbs -->
   <div class="bg-orb orb-1"></div>
   <div class="bg-orb orb-2"></div>
@@ -49,14 +46,18 @@
     <div class="card upload-card">
       <form method="POST" enctype="multipart/form-data" id="uploadForm" onsubmit="return handleSubmit(event)">
 
-        <div class="upload-zone" id="dropzone"
-             ondragover="onDrag(event)"
-             ondragleave="onDragLeave(event)"
-             ondrop="onDrop(event)"
-             onclick="document.getElementById('fileInput').click()">
-          <input type="file" id="fileInput" name="image"
-                 accept=".jpg,.jpeg,.png,.bmp,.webp,.tiff" required
-                 onchange="previewImage(this)">
+        <!--
+          FIX: The <input> is NOT inside the dropzone div anymore.
+          Previously the input was position:absolute covering the whole zone,
+          so a click hit the input directly AND bubbled to the div's onclick,
+          which called .click() a second time — opening the file dialog twice.
+          Now the label wraps the zone (native HTML association) and the input
+          sits just below it, hidden. One click → one dialog.
+        -->
+        <label for="fileInput" class="upload-zone" id="dropzone"
+               ondragover="onDrag(event)"
+               ondragleave="onDragLeave(event)"
+               ondrop="onDrop(event)">
           <div class="upload-icon">
             <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M24 4L24 32M24 4L14 14M24 4L34 14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -66,7 +67,12 @@
           <p class="upload-main">Drag &amp; drop your image here</p>
           <p class="upload-sub">or click to browse &nbsp;·&nbsp; JPG, PNG, BMP, WEBP, TIFF up to 16 MB</p>
           <div id="fileName" class="file-name"></div>
-        </div>
+        </label>
+
+        <input type="file" id="fileInput" name="image"
+               accept=".jpg,.jpeg,.png,.bmp,.webp,.tiff" required
+               onchange="previewImage(this)"
+               style="display:none;">
 
         <!-- Loader -->
         <div id="loader" class="loader" aria-live="polite">
@@ -131,7 +137,7 @@
     </div>
     {% endif %}
 
-    <footer class="footer">Powered by Zhang et al for ECCV 2016 colorization model · Enhanced post-processing pipeline · Thank you for using our service!</footer>
+    <footer class="footer">Powered by Zhang et al. ECCV 2016 colorization model · Thank you for using Chromify!</footer>
   </div>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>

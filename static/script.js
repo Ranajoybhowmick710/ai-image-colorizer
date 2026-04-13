@@ -3,36 +3,6 @@
    Stable, pointer-events-based compare slider + UI polish
 ═══════════════════════════════════════════════════════ */
 
-// ── Cursor glow ────────────────────────────────────────
-const dot  = document.getElementById("cursor-dot");
-const ring = document.getElementById("cursor-ring");
-
-let mouseX = 0, mouseY = 0;
-let ringX  = 0, ringY  = 0;
-
-document.addEventListener("mousemove", (e) => {
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-
-  if (dot) {
-    dot.style.left = mouseX + "px";
-    dot.style.top  = mouseY + "px";
-  }
-});
-
-// Smooth ring lag via rAF
-function animateRing() {
-  ringX += (mouseX - ringX) * 0.12;
-  ringY += (mouseY - ringY) * 0.12;
-
-  if (ring) {
-    ring.style.left = ringX + "px";
-    ring.style.top  = ringY + "px";
-  }
-  requestAnimationFrame(animateRing);
-}
-animateRing();
-
 // ── Drag & drop ────────────────────────────────────────
 function onDrag(e) {
   e.preventDefault();
@@ -76,19 +46,18 @@ function previewImage(input) {
     section.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
-  // Visually activate the drop zone
   const dz = document.getElementById("dropzone");
   if (dz) dz.classList.add("has-file");
 }
 
 // ── Loader / progress ──────────────────────────────────
 const STAGES = [
-  { at:  0, label: "Uploading image…"         },
-  { at: 20, label: "Analysing tones…"         },
-  { at: 40, label: "Predicting colours…"      },
-  { at: 65, label: "Applying AI palette…"     },
-  { at: 80, label: "Boosting saturation…"     },
-  { at: 92, label: "Finalising result…"       },
+  { at:  0, label: "Uploading image…"      },
+  { at: 20, label: "Analysing tones…"      },
+  { at: 40, label: "Predicting colours…"   },
+  { at: 65, label: "Applying AI palette…"  },
+  { at: 80, label: "Boosting saturation…"  },
+  { at: 92, label: "Finalising result…"    },
 ];
 
 function handleSubmit(e) {
@@ -96,7 +65,7 @@ function handleSubmit(e) {
   if (!input || !input.files.length) return false;
 
   showLoader();
-  return true; // let the form submit
+  return true;
 }
 
 function showLoader() {
@@ -108,17 +77,15 @@ function showLoader() {
   if (loader) loader.style.display = "flex";
   if (btn)    btn.disabled = true;
 
-  let progress  = 0;
-  let stageIdx  = 0;
+  let progress = 0;
+  let stageIdx = 0;
 
   const interval = setInterval(() => {
-    // Slow down near the end so it never reaches 100 before redirect
     const speed = progress < 70 ? (8 + Math.random() * 10) : (1 + Math.random() * 3);
     progress = Math.min(progress + speed, 96);
 
     if (fill) fill.style.width = progress + "%";
 
-    // Update stage label
     for (let i = STAGES.length - 1; i >= 0; i--) {
       if (progress >= STAGES[i].at) {
         if (stageIdx !== i) {
@@ -157,9 +124,8 @@ function toggleDark() {
 }
 
 // ── Compare slider ─────────────────────────────────────
-// Uses pointer events for solid mouse + touch support
 window.addEventListener("load", () => {
-  const box     = document.getElementById("compareBox");
+  const box = document.getElementById("compareBox");
   if (!box) return;
 
   const wrapper = document.getElementById("afterWrapper");
@@ -172,15 +138,13 @@ window.addEventListener("load", () => {
     let x = clientX - rect.left;
     x = Math.max(0, Math.min(x, rect.width));
     const pct = (x / rect.width) * 100;
-
-    wrapper.style.width        = pct + "%";
-    handle.style.left          = pct + "%";
+    wrapper.style.width = pct + "%";
+    handle.style.left   = pct + "%";
   }
 
   // Initialise at 50%
   setPosition(box.getBoundingClientRect().left + box.getBoundingClientRect().width * 0.5);
 
-  // Pointer events (covers mouse + touch + stylus)
   handle.addEventListener("pointerdown", (e) => {
     isDragging = true;
     handle.setPointerCapture(e.pointerId);
@@ -197,14 +161,12 @@ window.addEventListener("load", () => {
     box.classList.remove("dragging");
   });
 
-  // Also allow dragging anywhere in the box (not just the handle)
   box.addEventListener("pointermove", (e) => {
     if (!isDragging) return;
     setPosition(e.clientX);
   });
 
   box.addEventListener("pointerdown", (e) => {
-    // Only activate drag when clicking the box itself (not the handle)
     if (e.target === handle || handle.contains(e.target)) return;
     isDragging = true;
     box.setPointerCapture(e.pointerId);

@@ -14,9 +14,9 @@
   --border:     rgba(255,255,255,0.08);
   --text:       #f0eff4;
   --muted:      #7a7a8e;
-  --accent:     #e8602c;         /* vivid orange-red */
-  --accent2:    #c94bc3;         /* magenta */
-  --accent3:    #3bd6c6;         /* teal */
+  --accent:     #e8602c;
+  --accent2:    #c94bc3;
+  --accent3:    #3bd6c6;
   --gold:       #f5c542;
   --radius:     18px;
   --radius-sm:  10px;
@@ -52,6 +52,8 @@ body {
   padding: 2rem 1.25rem 4rem;
   transition: background var(--transition), color var(--transition);
   overflow-x: hidden;
+  /* Normal system cursor everywhere */
+  cursor: default;
 }
 
 /* ── Ambient orbs ─────────────────────────────────────── */
@@ -79,29 +81,6 @@ body {
   bottom: -80px; right: 10%;
 }
 body:not(.dark) .bg-orb { opacity: 0.10; }
-
-/* ── Cursor ────────────────────────────────────────────── */
-#cursor-dot, #cursor-ring {
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9999;
-  transform: translate(-50%, -50%);
-}
-#cursor-dot {
-  width: 7px; height: 7px;
-  background: var(--accent);
-  box-shadow: 0 0 12px var(--accent);
-  transition: width 0.15s, height 0.15s;
-}
-#cursor-ring {
-  width: 28px; height: 28px;
-  border: 1.5px solid var(--accent);
-  opacity: 0.5;
-}
-@media (max-width: 768px) {
-  #cursor-dot, #cursor-ring { display: none; }
-}
 
 /* ── Page wrapper ─────────────────────────────────────── */
 .page {
@@ -208,14 +187,21 @@ body:not(.dark) .bg-orb { opacity: 0.10; }
 }
 
 /* ── Upload zone ──────────────────────────────────────── */
+/*
+  FIX: Changed from <div onclick=...> to a <label for="fileInput">.
+  The label is display:block and cursor:pointer. The hidden <input> below it
+  is triggered natively by the label — no JS .click() call needed, so the
+  dialog only ever opens once.
+*/
 .upload-zone {
+  display: block;          /* label must be block-level */
   border: 1.5px dashed var(--border);
   border-radius: 14px;
   padding: 36px 20px;
   text-align: center;
   cursor: pointer;
   position: relative;
-  transition: border-color var(--transition), background var(--transition), transform 0.15s;
+  transition: border-color var(--transition), background var(--transition), transform 0.2s;
   user-select: none;
 }
 .upload-zone:hover {
@@ -231,12 +217,6 @@ body:not(.dark) .bg-orb { opacity: 0.10; }
 .upload-zone.has-file {
   border-color: var(--accent3);
   background: rgba(59, 214, 198, 0.05);
-}
-.upload-zone input[type="file"] {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
 }
 
 .upload-icon {
@@ -263,6 +243,7 @@ body:not(.dark) .bg-orb { opacity: 0.10; }
   color: var(--accent3);
   font-weight: 500;
   min-height: 1.2em;
+  transition: opacity 0.25s ease;
 }
 
 /* ── Loader ───────────────────────────────────────────── */
@@ -409,7 +390,7 @@ body:not(.dark) .bg-orb { opacity: 0.10; }
 .img-after-wrapper img {
   position: absolute;
   top: 0; left: 0;
-  width: 100%;          /* img width = compare-box width always */
+  width: 100%;
   height: 100%;
   object-fit: cover;
   max-width: none;
