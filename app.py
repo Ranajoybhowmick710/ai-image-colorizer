@@ -34,9 +34,9 @@ def download_file(url, path):
         urllib.request.urlretrieve(url, path)
         print("  Done.")
 
-PROTO_URL  = "https://raw.githubusercontent.com/richzhang/colorization/master/models/colorization_deploy_v2.prototxt"
-MODEL_URL  = "https://github.com/richzhang/colorization/releases/download/v1.0/colorization_release_v2.caffemodel"
-POINTS_URL = "https://github.com/richzhang/colorization/raw/master/resources/pts_in_hull.npy"
+PROTO_URL  = "https://github.com/richzhang/colorization/blob/caffe/colorization/models/colorization_deploy_v2.prototxt"
+MODEL_URL  = "https://www.dropbox.com/s/dx0qvhhp5hbcx7z/colorization_release_v2.caffemodel?dl=1"
+POINTS_URL = "https://github.com/richzhang/colorization/blob/caffe/colorization/resources/pts_in_hull.npy"
 
 os.makedirs("model", exist_ok=True)
 download_file(PROTO_URL,  PROTOTXT)
@@ -167,4 +167,5 @@ def too_large(_):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+     port = int(os.environ.get("PORT", 5000))
+     app.run(host="0.0.0.0", port=port)
