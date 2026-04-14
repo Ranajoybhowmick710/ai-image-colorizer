@@ -44,15 +44,18 @@ download_file(MODEL_URL,  MODEL)
 download_file(POINTS_URL, POINTS)
 
 # ── Load model ────────────────────────────────────────
-net  = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
-pts  = np.load(POINTS)
+def colorize(image_bgr):
+    net  = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
+    pts  = np.load(POINTS)
 
-class8 = net.getLayerId("class8_ab")
-conv8  = net.getLayerId("conv8_313_rh")
+    class8 = net.getLayerId("class8_ab")
+    conv8  = net.getLayerId("conv8_313_rh")
 
-pts = pts.transpose().reshape(2, 313, 1, 1)
-net.getLayer(class8).blobs = [pts.astype("float32")]
-net.getLayer(conv8).blobs  = [np.full([1, 313], 2.606, dtype="float32")]
+    pts = pts.transpose().reshape(2, 313, 1, 1)
+    net.getLayer(class8).blobs = [pts.astype("float32")]
+    net.getLayer(conv8).blobs  = [np.full([1, 313], 2.606, dtype="float32")]
+
+    # rest of your code...
 
 # ── Helpers ───────────────────────────────────────────
 def allowed_file(filename):
