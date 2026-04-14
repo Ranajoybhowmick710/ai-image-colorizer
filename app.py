@@ -27,15 +27,15 @@ PROTOTXT = os.path.join(BASE_DIR, "model/colorization_deploy_v2.prototxt")
 MODEL    = os.path.join(BASE_DIR, "model/colorization_release_v2.caffemodel")
 POINTS   = os.path.join(BASE_DIR, "model/pts_in_hull.npy")
 
+PROTO_URL  = "https://raw.githubusercontent.com/richzhang/colorization/refs/heads/caffe/colorization/models/colorization_deploy_v2.prototxt"
+MODEL_URL  = "https://www.dropbox.com/s/dx0qvhhp5hbcx7z/colorization_release_v2.caffemodel?dl=1"
+POINTS_URL = "https://raw.githubusercontent.com/richzhang/colorization/refs/heads/caffe/colorization/resources/pts_in_hull.npy"
+
 # ── Auto Download ─────────────────────────────────────
 def download_file(url, path):
     print(f"Downloading {os.path.basename(path)} …")
     urllib.request.urlretrieve(url, path)
     print("Done.")
-
-PROTO_URL  = "https://raw.githubusercontent.com/richzhang/colorization/refs/heads/caffe/colorization/models/colorization_deploy_v2.prototxt"
-MODEL_URL  = "https://www.dropbox.com/s/dx0qvhhp5hbcx7z/colorization_release_v2.caffemodel?dl=1"
-POINTS_URL = "https://raw.githubusercontent.com/richzhang/colorization/refs/heads/caffe/colorization/resources/pts_in_hull.npy"
 
 os.makedirs("model", exist_ok=True)
 download_file(PROTO_URL,  PROTOTXT)
@@ -49,15 +49,19 @@ def load_model():
     global net
 
     if net is None:
+        print("Loading model...")
+
         net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
         pts = np.load(POINTS)
 
         class8 = net.getLayerId("class8_ab")
-        conv8 = net.getLayerId("conv8_313_rh")
+        conv8  = net.getLayerId("conv8_313_rh")
 
         pts = pts.transpose().reshape(2, 313, 1, 1)
         net.getLayer(class8).blobs = [pts.astype("float32")]
-        net.getLayer(conv8).blobs = [np.full([1, 313], 2.606, dtype="float32")]
+        net.getLayer(conv8).blobs  = [np.full([1, 313], 2.606, dtype="float32")]
+
+        print("Model loaded ✅")
 
     return net
 
@@ -94,12 +98,13 @@ def colorize(image_bgr):
 def index():
     if request.method == "POST":
         file = request.files.get("image")
+
         if not file or file.filename == "":
             return redirect("/")
 
         if not allowed_file(file.filename):
             return render_template("index.html", show_result=False,
-                                   error="Unsupported file type.")
+                                   error="Unsupported file type")
 
         try:
             filename = secure_filename(file.filename)
@@ -109,6 +114,13 @@ def index():
             image = cv2.imread(input_path)
             if image is None:
                 raise ValueError("Invalid image")
+
+            # 🔥 Reduce size (prevents crash)
+            h, w = image.shape[:2]
+            max_dim = 512
+            if max(h, w) > max_dim:
+                scale = max_dim / max(h, w)
+                image = cv2.resize(image, (int(w * scale), int(h * scale)))
 
             result = colorize(image)
 
@@ -122,9 +134,10 @@ def index():
                 show_result=True
             )
 
-        except Exception as exc:
+        except Exception as e:
+            print("ERROR:", e)
             return render_template("index.html", show_result=False,
-                                   error=f"Processing failed: {str(exc)}")
+                                   error="Processing failed. Try smaller image.")
 
     return render_template("index.html", show_result=False)
 
@@ -145,6 +158,7 @@ def clear():
                 pass
     return redirect("/")
 
+# ── Run ──────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
