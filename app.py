@@ -29,14 +29,13 @@ POINTS   = os.path.join(BASE_DIR, "model/pts_in_hull.npy")
 
 # ── Auto Download ─────────────────────────────────────
 def download_file(url, path):
-    if not os.path.exists(path):
-        print(f"Downloading {os.path.basename(path)} …")
-        urllib.request.urlretrieve(url, path)
-        print("  Done.")
+    print(f"Downloading {os.path.basename(path)} …")
+    urllib.request.urlretrieve(url, path)
+    print("Done.")
 
-PROTO_URL  = "https://github.com/richzhang/colorization/blob/caffe/colorization/models/colorization_deploy_v2.prototxt"
+PROTO_URL  = "https://raw.githubusercontent.com/richzhang/colorization/refs/heads/caffe/colorization/models/colorization_deploy_v2.prototxt"
 MODEL_URL  = "https://www.dropbox.com/s/dx0qvhhp5hbcx7z/colorization_release_v2.caffemodel?dl=1"
-POINTS_URL = "https://github.com/richzhang/colorization/blob/caffe/colorization/resources/pts_in_hull.npy"
+POINTS_URL = "https://raw.githubusercontent.com/richzhang/colorization/refs/heads/caffe/colorization/resources/pts_in_hull.npy"
 
 os.makedirs("model", exist_ok=True)
 download_file(PROTO_URL,  PROTOTXT)
