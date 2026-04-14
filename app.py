@@ -43,51 +43,52 @@ download_file(PROTO_URL,  PROTOTXT)
 download_file(MODEL_URL,  MODEL)
 download_file(POINTS_URL, POINTS)
 
-# ── Load model ────────────────────────────────────────
-def colorize(image_bgr):
-    net  = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
-    pts  = np.load(POINTS)
+# ── Lazy Load Model ──────────────────────────────────
+net = None
 
-    class8 = net.getLayerId("class8_ab")
-    conv8  = net.getLayerId("conv8_313_rh")
+def load_model():
+    global net
 
-    pts = pts.transpose().reshape(2, 313, 1, 1)
-    net.getLayer(class8).blobs = [pts.astype("float32")]
-    net.getLayer(conv8).blobs  = [np.full([1, 313], 2.606, dtype="float32")]
+    if net is None:
+        net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
+        pts = np.load(POINTS)
 
-    # rest of your code...
+        class8 = net.getLayerId("class8_ab")
+        conv8 = net.getLayerId("conv8_313_rh")
+
+        pts = pts.transpose().reshape(2, 313, 1, 1)
+        net.getLayer(class8).blobs = [pts.astype("float32")]
+        net.getLayer(conv8).blobs = [np.full([1, 313], 2.606, dtype="float32")]
+
+    return net
 
 # ── Helpers ───────────────────────────────────────────
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
 def colorize(image_bgr):
-    """
-    Pure model colorization — no saturation manipulation, no post-processing.
-    The ab channels predicted by the network are used exactly as-is.
-    """
-    scaled = image_bgr.astype("float32") / 255.0
-    lab    = cv2.cvtColor(scaled, cv2.COLOR_BGR2LAB)
+    net = load_model()
 
-    resized = cv2.resize(lab, (224, 224)) # type: ignore
-    L_input = cv2.split(resized)[0] # type: ignore
-    L_input -= 50 # type: ignore
+    scaled = image_bgr.astype("float32") / 255.0
+    lab = cv2.cvtColor(scaled, cv2.COLOR_BGR2LAB)
+
+    resized = cv2.resize(lab, (224, 224))
+    L_input = cv2.split(resized)[0]
+    L_input -= 50
 
     net.setInput(cv2.dnn.blobFromImage(L_input))
     ab = net.forward()[0].transpose((1, 2, 0))
 
     ab = cv2.resize(ab, (image_bgr.shape[1], image_bgr.shape[0]))
 
-    L_full    = cv2.split(lab)[0] # type: ignore
-    colorized: np.ndarray = np.concatenate((L_full[:, :, np.newaxis], ab), axis=2)
+    L_full = cv2.split(lab)[0]
+    colorized = np.concatenate((L_full[:, :, np.newaxis], ab), axis=2)
 
     colorized = cv2.cvtColor(colorized, cv2.COLOR_LAB2BGR)
     colorized = np.clip(colorized, 0, 1)
     colorized = (255 * colorized).astype("uint8")
 
     return colorized
-
 
 # ── Routes ────────────────────────────────────────────
 @app.route("/", methods=["GET", "POST"])
@@ -96,79 +97,55 @@ def index():
         file = request.files.get("image")
         if not file or file.filename == "":
             return redirect("/")
+
         if not allowed_file(file.filename):
-            return render_template(
-                "index.html", show_result=False,
-                error="Unsupported file type. Please upload a JPEG, PNG, BMP, WEBP, or TIFF image."
-            )
+            return render_template("index.html", show_result=False,
+                                   error="Unsupported file type.")
 
         try:
-            filename   = secure_filename(file.filename)
+            filename = secure_filename(file.filename)
             input_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             file.save(input_path)
 
             image = cv2.imread(input_path)
             if image is None:
-                raise ValueError("Could not decode image. The file may be corrupted.")
-
-            h, w = image.shape[:2]
-            max_dim = 1024
-            if max(h, w) > max_dim:
-                scale = max_dim / max(h, w)
-                image = cv2.resize(
-                    image, (int(w * scale), int(h * scale)),
-                    interpolation=cv2.INTER_AREA
-                )
+                raise ValueError("Invalid image")
 
             result = colorize(image)
 
             output_path = os.path.join(app.config["OUTPUT_FOLDER"], "result.jpg")
-            cv2.imwrite(output_path, result, [cv2.IMWRITE_JPEG_QUALITY, 95])
+            cv2.imwrite(output_path, result)
 
             return render_template(
                 "index.html",
-                input_img="/"  + input_path,
+                input_img="/" + input_path,
                 output_img="/" + output_path,
-                show_result=True,
+                show_result=True
             )
 
         except Exception as exc:
-            return render_template(
-                "index.html", show_result=False,
-                error=f"Processing failed: {str(exc)}"
-            )
+            return render_template("index.html", show_result=False,
+                                   error=f"Processing failed: {str(exc)}")
 
     return render_template("index.html", show_result=False)
-
 
 @app.route("/download")
 def download():
     path = os.path.join(app.config["OUTPUT_FOLDER"], "result.jpg")
     if not os.path.exists(path):
         return redirect("/")
-    return send_file(path, as_attachment=True, download_name="colorized_result.jpg")
-
+    return send_file(path, as_attachment=True)
 
 @app.route("/clear")
 def clear():
-    # Use the app.config values — not bare module-level names
     for folder in [app.config["UPLOAD_FOLDER"], app.config["OUTPUT_FOLDER"]]:
         for f in os.listdir(folder):
             try:
                 os.remove(os.path.join(folder, f))
-            except OSError:
+            except:
                 pass
     return redirect("/")
 
-
-@app.errorhandler(413)
-def too_large(_):
-    return render_template(
-        "index.html", show_result=False,
-        error="File too large. Maximum upload size is 16 MB."
-    ), 413
-
-
 if __name__ == "__main__":
-     port = int(os.environ.get("PORT", 5000))
-     app.run(host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
