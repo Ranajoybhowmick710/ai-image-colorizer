@@ -1,0 +1,5 @@
+flask
+numpy
+opencv-python-headless
+urllib3
+werkzeug
